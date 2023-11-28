@@ -1,0 +1,17 @@
+{
+  "name": "walkingpad",
+  "module": "index.ts",
+  "devDependencies": {
+    "bun-types": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "type": "module",
+  "dependencies": {
+    "@jhuggett/terminal": "link:@jhuggett/terminal",
+    "@types/websocket": "^1.0.10",
+    "axios": "^1.6.2",
+    "websocket": "^1.0.34"
+  }
+}
