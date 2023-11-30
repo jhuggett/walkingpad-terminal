@@ -1,15 +1,18 @@
-# walkingpad
+# Walkingpad TUI
 
-To install dependencies:
+Bun TUI script that connects locally to a Python Flask websocket server that uses [https://github.com/ph4r05/ph4-walkingpad](https://github.com/ph4r05/ph4-walkingpad)https://github.com/ph4r05/ph4-walkingpad to communicate with the treadmill over BLE. 
 
-```bash
-bun install
+
+# Running
+> TODO: improve how scanning works, right now you have to set the address of the treadmill in the config file
+
+Run the WS server:
+```
+> cd ./server
+> python wsserver.py
 ```
 
-To run:
-
-```bash
-bun run index.ts
+Run the TUI:
 ```
-
-This project was created using `bun init` in bun v1.0.3. [Bun](https://bun.sh) is a fast all-in-one JavaScript runtime.
+> bun run index.ts
+```
