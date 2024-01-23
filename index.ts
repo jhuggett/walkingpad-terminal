@@ -5,6 +5,9 @@ import { timeSince } from "./timeSince";
 import { spawn } from "child_process";
 import { sleep } from "bun";
 
+// For sqlite replication
+// https://litestream.io/
+
 const pythonProcess = spawn("python3", ["./wsserver.py"], {
   cwd: "./server",
 });
