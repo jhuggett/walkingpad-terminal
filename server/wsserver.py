@@ -1,6 +1,8 @@
 import asyncio
 import websockets
 
+# To install deps:
+# python3 -m pip install --no-cache-dir -r requirements.txt
 
 
 import asyncio

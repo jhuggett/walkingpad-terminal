@@ -12,7 +12,7 @@ const pythonProcess = spawn("python3", ["./wsserver.py"], {
 let processIsReady = false;
 
 pythonProcess.stdout.on("data", (data) => {
-  //console.log(`stdout: ${data}`);
+  // console.log(`stdout: ${data}`);
 });
 
 pythonProcess.stderr.on("data", (data) => {
@@ -20,7 +20,7 @@ pythonProcess.stderr.on("data", (data) => {
     processIsReady = true;
   }
 
-  //console.error(`stderr: ${data}`);
+  // console.error(`stderr: ${data}`);
 });
 
 const waitForProcess = () =>
