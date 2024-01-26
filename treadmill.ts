@@ -1,9 +1,11 @@
 import { SubscribableEvent } from "@jhuggett/terminal/subscribable-event";
+import Database from "bun:sqlite";
+import { Session } from "./data/models/session";
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 type Stats = {
-  distance: number;
+  dist: number;
   time: number;
   speed: number;
   state: number;
@@ -15,6 +17,8 @@ const parseStats = (stats: object): Stats => {
 };
 
 export class Treadmill {
+  constructor(private db: Database) {}
+
   private connection?: WebSocket;
 
   onSpeedChanged = new SubscribableEvent<number>();
@@ -71,8 +75,6 @@ export class Treadmill {
 
     return new Promise<void>((resolve, reject) => {
       this.connection!.addEventListener("open", () => {
-        this.keepAlive();
-
         resolve();
       });
 
@@ -84,13 +86,6 @@ export class Treadmill {
         reject(error);
       });
     });
-  }
-
-  async keepAlive() {
-    while (this.connected) {
-      //this.connection?.send("pong");
-      await sleep(5000);
-    }
   }
 
   bleConnected = false;
@@ -120,33 +115,46 @@ export class Treadmill {
   }
 
   stats?: Stats;
+  async getStats() {
+    const stats = await this.send("get_stats");
+
+    const parsedStats = parseStats(stats);
+
+    this.stats = parsedStats;
+
+    this.onStatusUpdate.emit();
+  }
 
   async watchStatus() {
     while (this.running) {
-      // console.log("get_stats");
-
-      const stats = await this.send("get_stats");
-
-      const parsedStats = parseStats(stats);
-
-      this.stats = parsedStats;
-
-      this.onStatusUpdate.emit();
+      await this.getStats();
       await sleep(5000);
     }
   }
 
-  stop() {
+  async stop() {
     if (!this.running) {
       return;
     }
-    this.send("stop");
+    await this.send("stop");
+
+    await this.getStats();
+
     this.running = false;
+
+    Session.create(this.db, {
+      distance: this.stats?.dist ?? 0,
+      duration: this.stats?.time ?? 0,
+      steps: this.stats?.steps ?? 0,
+    });
+
+    this.stats = undefined;
+    this.onStatusUpdate.emit();
     this.currentSpeed = 16;
   }
 
-  private setSpeed(speed: number) {
-    this.send("set_speed", { speed });
+  private async setSpeed(speed: number) {
+    await this.send("set_speed", { speed });
     this.onSpeedChanged.emit(speed);
   }
 
@@ -157,7 +165,7 @@ export class Treadmill {
     if (this.currentSpeed > 60) {
       this.currentSpeed = 60;
     }
-    this.setSpeed(this.currentSpeed);
+    return this.setSpeed(this.currentSpeed);
   }
 
   decreaseSpeed() {
@@ -165,6 +173,6 @@ export class Treadmill {
     if (this.currentSpeed < 0) {
       this.currentSpeed = 0;
     }
-    this.setSpeed(this.currentSpeed);
+    return this.setSpeed(this.currentSpeed);
   }
 }

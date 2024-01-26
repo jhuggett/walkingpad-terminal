@@ -4,41 +4,26 @@ import { Treadmill } from "./treadmill";
 import { timeSince } from "./timeSince";
 import { spawn } from "child_process";
 import { sleep } from "bun";
+import { PythonService } from "./pythonService";
+import { getDBConnection } from "./data/database";
+import { Session } from "./data/models/session";
 
 // For sqlite replication
 // https://litestream.io/
 
-const pythonProcess = spawn("python3", ["./wsserver.py"], {
-  cwd: "./server",
-});
+export const db = await getDBConnection();
 
-let processIsReady = false;
+let report = Session.summaryOfToday(db);
 
-pythonProcess.stdout.on("data", (data) => {
-  // console.log(`stdout: ${data}`);
-});
+const rerunReport = () => {
+  report = Session.summaryOfToday(db);
+};
 
-pythonProcess.stderr.on("data", (data) => {
-  if (data.includes("server listening on 127.0.0.1:8765")) {
-    processIsReady = true;
-  }
+Session.onCreate.subscribe(rerunReport);
 
-  // console.error(`stderr: ${data}`);
-});
+const pythonService = await PythonService.start();
 
-const waitForProcess = () =>
-  new Promise<void>((resolve) => {
-    const interval = setInterval(() => {
-      if (processIsReady) {
-        clearInterval(interval);
-        resolve();
-      }
-    }, 100);
-  });
-
-await waitForProcess();
-
-const treadmill = new Treadmill();
+const treadmill = new Treadmill(db);
 
 await treadmill.connectToService();
 
@@ -75,7 +60,16 @@ try {
     );
     cursor.newLine();
     cursor.write(
-      `Distance: ${treadmill.stats?.distance ?? 0} | Steps: ${
+      `TODAY Distance: ${report.distance} | Steps: ${report.steps} | Time: ${report.duration}`,
+      {
+        foregroundColor: gray(0.75),
+        bold: true,
+      }
+    );
+
+    cursor.newLine();
+    cursor.write(
+      `CURRENT Distance: ${treadmill.stats?.dist ?? 0} | Steps: ${
         treadmill.stats?.steps ?? 0
       } | Time: ${treadmill.stats?.time ?? 0} | Speed: ${
         treadmill.stats?.speed ?? 0
@@ -185,6 +179,6 @@ treadmill.disconnect();
 shell.disableMouseTracking();
 shell.showCursor(true);
 
-pythonProcess.kill();
+pythonService.shutdown();
 
 process.exit();
