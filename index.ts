@@ -67,9 +67,9 @@ try {
     cursor.newLine();
 
     cursor.write(
-      `distance: ${report.distance / 100}mi • steps: ${
+      `${representTime(report.duration)} • ${report.distance / 100}mi • ${
         report.steps
-      } • duration: ${representTime(report.duration)}`,
+      } steps`,
       {
         foregroundColor: gray(0.75),
         bold: true,
@@ -86,9 +86,9 @@ try {
     });
     cursor.newLine();
     cursor.write(
-      `distance: ${(treadmill.stats?.dist ?? 0) / 100}mi • steps: ${
-        treadmill.stats?.steps ?? 0
-      } • duration: ${representTime(treadmill.stats?.time ?? 0)}`,
+      `${representTime(treadmill.stats?.time ?? 0)} • ${
+        (treadmill.stats?.dist ?? 0) / 100
+      }mi • ${treadmill.stats?.steps ?? 0} steps`,
       {
         foregroundColor: gray(0.75),
         bold: true,
