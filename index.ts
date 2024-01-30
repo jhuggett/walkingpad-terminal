@@ -1,4 +1,4 @@
-import { BunShell, gray, green } from "@jhuggett/terminal";
+import { BunShell, blue, gray, green, red, yellow } from "@jhuggett/terminal";
 import { within } from "@jhuggett/terminal/bounds/bounds";
 import { Treadmill } from "./treadmill";
 import { timeSince } from "./timeSince";
@@ -10,6 +10,14 @@ import { Session } from "./data/models/session";
 
 // For sqlite replication
 // https://litestream.io/
+
+const representTime = (time: number) => {
+  const hours = Math.floor(time / 3600);
+  const minutes = Math.floor((time - hours * 3600) / 60);
+  const seconds = Math.floor(time - hours * 3600 - minutes * 60);
+
+  return `${hours}:${minutes}:${seconds}`;
+};
 
 export const db = await getDBConnection();
 
@@ -51,16 +59,17 @@ try {
   );
 
   container.renderer = ({ cursor }) => {
-    cursor.write(
-      `Treadmill ${treadmill.bleConnected ? "connected" : "connecting"}`,
-      {
-        foregroundColor: gray(0.75),
-        bold: true,
-      }
-    );
+    cursor.write("Today's total", {
+      foregroundColor: gray(0.75),
+      bold: true,
+      underline: true,
+    });
     cursor.newLine();
+
     cursor.write(
-      `TODAY Distance: ${report.distance} | Steps: ${report.steps} | Time: ${report.duration}`,
+      `distance: ${report.distance / 100}mi • steps: ${
+        report.steps
+      } • duration: ${representTime(report.duration)}`,
       {
         foregroundColor: gray(0.75),
         bold: true,
@@ -68,38 +77,49 @@ try {
     );
 
     cursor.newLine();
+    cursor.newLine();
+
+    cursor.write("Current Session", {
+      foregroundColor: gray(0.75),
+      bold: true,
+      underline: true,
+    });
+    cursor.newLine();
     cursor.write(
-      `CURRENT Distance: ${treadmill.stats?.dist ?? 0} | Steps: ${
+      `distance: ${(treadmill.stats?.dist ?? 0) / 100}mi • steps: ${
         treadmill.stats?.steps ?? 0
-      } | Time: ${treadmill.stats?.time ?? 0} | Speed: ${
-        treadmill.stats?.speed ?? 0
-      }`,
+      } • duration: ${representTime(treadmill.stats?.time ?? 0)}`,
       {
         foregroundColor: gray(0.75),
         bold: true,
       }
     );
 
+    cursor.newLine();
+    cursor.newLine();
+
+    cursor.write(
+      `Treadmill is ${treadmill.bleConnected ? "connected" : "connecting"}`,
+      {
+        foregroundColor: treadmill.bleConnected ? green(0.5) : yellow(0.5),
+        bold: true,
+      }
+    );
     cursor.newLine();
     cursor.newLine();
 
     if (treadmill.running) {
-      cursor.write("Treadmill Running", {
-        foregroundColor: green(0.75),
+      cursor.write("Belt is running", {
+        foregroundColor: yellow(0.75),
         bold: true,
       });
-      if (treadmill.lastRun) {
-        cursor.write(` (${timeSince(treadmill.lastRun)})`, {
-          foregroundColor: gray(0.75),
-        });
-      }
       cursor.newLine();
       cursor.newLine();
       cursor.write("<- ", {
         foregroundColor: gray(0.75),
         bold: true,
       });
-      cursor.write(`${(treadmill.currentSpeed / 4) * 0.25}`, {
+      cursor.write(`${(treadmill.currentSpeed / 4) * 0.25}mi/h`, {
         foregroundColor: {
           r: 255,
           g: 0,
@@ -113,7 +133,7 @@ try {
         bold: true,
       });
     } else {
-      cursor.write("Treadmill stopped", {
+      cursor.write("Belt is stopped", {
         foregroundColor: gray(0.5),
         italic: true,
       });
