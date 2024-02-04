@@ -141,10 +141,13 @@ export class Treadmill {
     }
   }
 
+  onSessionEnd: SubscribableEvent<void> = new SubscribableEvent();
+  stopping = false;
   async stop() {
-    if (!this.running) {
+    if (!this.running || this.stopping) {
       return;
     }
+    this.stopping = true;
     debug.log("treadmill", "info", "stopping");
 
     await this.send("stop");
@@ -164,6 +167,10 @@ export class Treadmill {
     this.currentSpeed = 16;
 
     debug.log("treadmill", "info", "stopped");
+
+    this.stopping = false;
+
+    this.onSessionEnd.emit();
   }
 
   private async setSpeed(speed: number) {

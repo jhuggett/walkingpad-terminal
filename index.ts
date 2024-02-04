@@ -32,11 +32,10 @@ let todaysReport = Session.summary(Session.today(db));
 let weeksReport = Session.summary(Session.thisWeek(db));
 
 const rerunReports = () => {
+  debug.log("general", "debug", "Rerunning reports");
   todaysReport = Session.summary(Session.today(db));
   weeksReport = Session.summary(Session.thisWeek(db));
 };
-
-Session.onCreate.subscribe(rerunReports);
 
 const pythonService = await PythonService.start();
 
@@ -215,6 +214,13 @@ try {
   });
 
   treadmill.onBleConnected.subscribe(() => {
+    container.render();
+    shell.render();
+  });
+
+  treadmill.onSessionEnd.subscribe((session) => {
+    debug.log("general", "debug", "Session ended");
+    rerunReports();
     container.render();
     shell.render();
   });
