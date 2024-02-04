@@ -1,6 +1,7 @@
 import { SubscribableEvent } from "@jhuggett/terminal/subscribable-event";
 import Database from "bun:sqlite";
 import { Session } from "./data/models/session";
+import { debug } from ".";
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -69,20 +70,24 @@ export class Treadmill {
       if (message.id) {
         this.receiveResponse(message.id, message.result);
       } else {
-        console.warn("unknown message", event);
+        debug.log("treadmill", "warning", `unknown message: ${event}`);
+        //console.warn("unknown message", event);
       }
     };
 
     return new Promise<void>((resolve, reject) => {
       this.connection!.addEventListener("open", () => {
+        debug.log("treadmill", "info", "connected");
         resolve();
       });
 
       this.connection!.addEventListener("close", () => {
-        console.log("disconnected");
+        //console.log("disconnected");
+        debug.log("treadmill", "info", "disconnected");
       });
 
       this.connection!.addEventListener("error", (error) => {
+        debug.log("treadmill", "error", `error: ${error}`);
         reject(error);
       });
     });
@@ -116,12 +121,16 @@ export class Treadmill {
 
   stats?: Stats;
   async getStats() {
+    debug.log("treadmill", "info", "getting stats");
     const stats = await this.send("get_stats");
 
     const parsedStats = parseStats(stats);
 
+    debug.log("treadmill", "debug", { parsedStats });
+
     this.stats = parsedStats;
 
+    debug.log("treadmill", "info", "got stats");
     this.onStatusUpdate.emit();
   }
 
@@ -136,6 +145,8 @@ export class Treadmill {
     if (!this.running) {
       return;
     }
+    debug.log("treadmill", "info", "stopping");
+
     await this.send("stop");
 
     await this.getStats();
@@ -151,11 +162,15 @@ export class Treadmill {
     this.stats = undefined;
     this.onStatusUpdate.emit();
     this.currentSpeed = 16;
+
+    debug.log("treadmill", "info", "stopped");
   }
 
   private async setSpeed(speed: number) {
+    debug.log("treadmill", "info", `setting speed to ${speed}`);
     await this.send("set_speed", { speed });
     this.onSpeedChanged.emit(speed);
+    debug.log("treadmill", "info", `speed set to ${speed}`);
   }
 
   private increment = 4;

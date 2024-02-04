@@ -7,9 +7,16 @@ import { sleep } from "bun";
 import { PythonService } from "./pythonService";
 import { getDBConnection } from "./data/database";
 import { Session } from "./data/models/session";
+import { Debug } from "./debug";
 
 // For sqlite replication
 // https://litestream.io/
+
+const toMiles = (km: number) => {
+  return (km * 0.621371).toFixed(2);
+};
+
+export const debug = new Debug();
 
 const representTime = (time: number) => {
   const hours = Math.floor(time / 3600);
@@ -21,13 +28,15 @@ const representTime = (time: number) => {
 
 export const db = await getDBConnection();
 
-let report = Session.summaryOfToday(db);
+let todaysReport = Session.summary(Session.today(db));
+let weeksReport = Session.summary(Session.thisWeek(db));
 
-const rerunReport = () => {
-  report = Session.summaryOfToday(db);
+const rerunReports = () => {
+  todaysReport = Session.summary(Session.today(db));
+  weeksReport = Session.summary(Session.thisWeek(db));
 };
 
-Session.onCreate.subscribe(rerunReport);
+Session.onCreate.subscribe(rerunReports);
 
 const pythonService = await PythonService.start();
 
@@ -53,12 +62,67 @@ shell.onWindowResize(() => {
 let stopProgram = false;
 
 try {
+  const content = root.createChildElement(() => {
+    return {
+      start: {
+        x: root.bounds.globalStart.x,
+        y: root.bounds.globalStart.y,
+      },
+      end: {
+        x: root.bounds.globalEnd.x,
+        y: Math.floor(root.bounds.globalEnd.y / 2),
+      },
+    };
+  }, {});
+
+  content.renderer = ({ cursor }) => {
+    cursor.properties.backgroundColor = blue(0.05);
+    cursor.fill(" ");
+  };
+
+  content.render();
+
+  const debugElement = root.createChildElement(() => {
+    return {
+      start: {
+        x: root.bounds.globalStart.x,
+        y: Math.floor(root.bounds.globalEnd.y / 2),
+      },
+      end: {
+        x: root.bounds.globalEnd.x,
+        y: root.bounds.globalEnd.y,
+      },
+    };
+  }, {});
+
+  debug.registerElement(debugElement);
+
   const container = root.createChildElement(
-    () => within(root, { paddingLeft: 2, paddingTop: 1 }),
+    () => within(content, { paddingLeft: 2, paddingTop: 1 }),
     {}
   );
 
   container.renderer = ({ cursor }) => {
+    cursor.write("Week's total", {
+      foregroundColor: gray(0.75),
+      bold: true,
+      underline: true,
+    });
+    cursor.newLine();
+
+    cursor.write(
+      `${representTime(weeksReport.duration)} • ${toMiles(
+        weeksReport.distance / 100
+      )}mi • ${weeksReport.steps} steps`,
+      {
+        foregroundColor: gray(0.75),
+        bold: true,
+      }
+    );
+
+    cursor.newLine();
+    cursor.newLine();
+
     cursor.write("Today's total", {
       foregroundColor: gray(0.75),
       bold: true,
@@ -67,9 +131,9 @@ try {
     cursor.newLine();
 
     cursor.write(
-      `${representTime(report.duration)} • ${report.distance / 100}mi • ${
-        report.steps
-      } steps`,
+      `${representTime(todaysReport.duration)} • ${toMiles(
+        todaysReport.distance / 100
+      )}mi • ${todaysReport.steps} steps`,
       {
         foregroundColor: gray(0.75),
         bold: true,
@@ -87,7 +151,7 @@ try {
     cursor.newLine();
     cursor.write(
       `${representTime(treadmill.stats?.time ?? 0)} • ${
-        (treadmill.stats?.dist ?? 0) / 100
+        treadmill.stats?.dist ? toMiles(treadmill.stats.dist / 100) : 0
       }mi • ${treadmill.stats?.steps ?? 0} steps`,
       {
         foregroundColor: gray(0.75),
@@ -191,7 +255,7 @@ try {
     await shell.userInteraction();
   }
 } catch (error) {
-  console.error(error);
+  //console.error(error);
 }
 
 treadmill.disconnect();

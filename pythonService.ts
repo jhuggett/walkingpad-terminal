@@ -1,4 +1,5 @@
 import { spawn, ChildProcess } from "child_process";
+import { debug } from "./index";
 
 export class PythonService {
   private process?: ChildProcess;
@@ -6,8 +7,6 @@ export class PythonService {
   shutdown() {
     this.process?.kill();
   }
-
-  private debug = false;
 
   static async start() {
     const service = new PythonService();
@@ -27,15 +26,17 @@ export class PythonService {
     let processIsReady = false;
 
     pythonProcess.stdout.on("data", (data) => {
-      this.debug && console.log(`stdout: ${data}`);
+      //this.debug && console.log(`stdout: ${data}`);
+      debug.log("python", "info", `stdout: ${data}`);
     });
 
     pythonProcess.stderr.on("data", (data) => {
       if (data.includes("server listening on 127.0.0.1:8765")) {
         processIsReady = true;
       }
+      debug.log("python", "debug", `stderr: ${data}`);
 
-      this.debug && console.error(`stderr: ${data}`);
+      //this.debug && console.error(`stderr: ${data}`);
     });
 
     const waitForProcess = () =>

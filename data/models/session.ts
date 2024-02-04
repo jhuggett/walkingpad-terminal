@@ -49,16 +49,24 @@ export class Session {
     const startOfDay = new Date();
     startOfDay.setHours(0, startOfDay.getTimezoneOffset(), 0, 0);
 
-    console.log({ startOfDay, iso: startOfDay.toISOString() });
+    //console.log({ startOfDay, iso: startOfDay.toISOString() });
 
     return Session.table(db)
       .since(startOfDay)
       .map((row) => new Session(row));
   }
 
-  static summaryOfToday(db: Database) {
-    const sessions = Session.today(db);
+  static thisWeek(db: Database) {
+    const startOfWeek = new Date();
+    startOfWeek.setHours(0, startOfWeek.getTimezoneOffset(), 0, 0);
+    startOfWeek.setTime(startOfWeek.getTime() - 7 * 24 * 60 * 60 * 1000);
 
+    return Session.table(db)
+      .since(startOfWeek)
+      .map((row) => new Session(row));
+  }
+
+  static summary(sessions: Session[]) {
     const totalDistance = sessions.reduce((acc, session) => {
       return acc + session.props.distance;
     }, 0);
