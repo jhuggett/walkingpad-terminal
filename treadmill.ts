@@ -39,7 +39,7 @@ export class Treadmill {
     }
   > = new Map();
 
-  private send(method: string, params?: any) {
+  send(method: string, params?: any) {
     const id = Math.random().toString(36).substr(2, 9);
 
     this.connection?.send(JSON.stringify({ id, method, params }));
@@ -63,7 +63,7 @@ export class Treadmill {
   }
 
   async connectToService() {
-    this.connection = new WebSocket("ws://127.0.0.1:8765");
+    this.connection = new WebSocket("ws://127.0.0.1:8080/wb");
 
     this.connection.onmessage = (event) => {
       const message = JSON.parse(event.data as string);
@@ -136,8 +136,8 @@ export class Treadmill {
 
   async watchStatus() {
     while (this.running) {
-      await this.getStats();
       await sleep(5000);
+      await this.getStats();
     }
   }
 
@@ -152,7 +152,7 @@ export class Treadmill {
 
     await this.send("stop");
 
-    await this.getStats();
+    //await this.getStats();
 
     this.running = false;
 

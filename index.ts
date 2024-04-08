@@ -8,6 +8,7 @@ import { PythonService } from "./pythonService";
 import { getDBConnection } from "./data/database";
 import { Session } from "./data/models/session";
 import { Debug } from "./debug";
+import { SubscribableEvent } from "@jhuggett/terminal/subscribable-event";
 
 // For sqlite replication
 // https://litestream.io/
@@ -17,6 +18,13 @@ const toMiles = (km: number) => {
 };
 
 export const debug = new Debug();
+
+const onShowLogsToggled = new SubscribableEvent<boolean>();
+let showLogs = false;
+const toggleShowLogs = () => {
+  showLogs = !showLogs;
+  onShowLogsToggled.emit(showLogs);
+};
 
 const representTime = (time: number) => {
   const hours = Math.floor(time / 3600);
@@ -37,7 +45,7 @@ const rerunReports = () => {
   weeksReport = Session.summary(Session.thisWeek(db));
 };
 
-const pythonService = await PythonService.start();
+// const pythonService = await PythonService.start();
 
 const treadmill = new Treadmill(db);
 
@@ -243,6 +251,18 @@ try {
     }
   });
 
+  container.on("d", () => {
+    treadmill.send("scan");
+  });
+
+  container.on("m", () => {
+    treadmill.send("manual_mode");
+  });
+
+  container.on("s", () => {
+    treadmill.send("standby_mode");
+  });
+
   container.on("Arrow Left", () => {
     treadmill.decreaseSpeed();
   });
@@ -269,6 +289,6 @@ treadmill.disconnect();
 shell.disableMouseTracking();
 shell.showCursor(true);
 
-pythonService.shutdown();
+// pythonService.shutdown();
 
 process.exit();
